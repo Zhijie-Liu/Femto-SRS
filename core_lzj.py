@@ -6,11 +6,198 @@ from tkinter import filedialog
 from PIL import Image
 from datetime import datetime
 from torch.utils.data import Dataset
+import re
+
+
+def sort_key(s):
+    # 排序关键字匹配
+    # 匹配开头数字序号
+    if s:
+        try:
+            c = re.findall('\d+', s)[0]
+        except:
+            c = -1
+        return int(c)
+
+
+def strsort(alist):
+    alist.sort(key=sort_key)
+    return alist
 
 
 number_dict = {0: 'zero', 1: 'one', 2: 'two', 3: 'three', 4: 'four',
                5: 'five', 6: 'six', 7: 'seven', 8: 'eight', 9: 'nine'}
 
+
+def get_datasets_ready(data_path):
+    final_path = []
+    path_list = get_datasets(data_path, final_path)
+    return path_list
+
+
+def get_datasets(data_path, final_path):
+    sub_path = os.listdir(data_path)
+    for path in sub_path:
+        path_temp = os.path.join(data_path, path)
+        if os.path.isdir(os.path.join(path_temp, os.listdir(path_temp)[0])):
+            get_datasets(path_temp, final_path)
+        else:
+            final_path.append(path_temp)
+
+    return final_path
+
+
+class UnetDatasetGastric(Dataset):
+    def __init__(self, fs_dir, lipids_dir, protein_dir, transform):
+        self.fs_dir = fs_dir
+        self.lipids_dir = lipids_dir
+        self.protein_dir = protein_dir
+        self.transform = transform
+        # self.fs_img_dir = strsort(os.listdir(self.fs_dir))
+        # self.lipids_img_dir = strsort(os.listdir(self.lipids_dir))
+        # self.protein_img_dir = strsort(os.listdir(self.protein_dir))
+        self.fs_img_dir = os.listdir(self.fs_dir)
+        self.fs_img_dir.sort()
+        # a = strsort(self.fs_img_dir)
+        self.lipids_img_dir = os.listdir(self.lipids_dir)
+        self.lipids_img_dir.sort()
+        self.protein_img_dir = os.listdir(self.protein_dir)
+        self.protein_img_dir.sort()
+        # self.fs_img_dir_sort = self.fs_img_dir
+        # self.fs_img_dir_sort.sort()
+        # self.lipids_img_dir_sort = self.lipids_img_dir
+        # self.lipids_img_dir_sort.sort()
+        # self.protein_img_dir_sort = self.protein_img_dir
+        # self.protein_img_dir_sort.sort()
+
+    def __len__(self):
+        return len(self.fs_img_dir)
+
+    def __getitem__(self, index):
+        fs_index = self.fs_img_dir[index]
+        lipids_index = self.lipids_img_dir[index]
+        protein_index = self.protein_img_dir[index]
+        fs_path = os.path.join(self.fs_dir, fs_index, 's_C002.tif')
+        lipids_path = os.path.join(self.lipids_dir, lipids_index, 's_C002.tif')
+        protein_path = os.path.join(self.protein_dir, protein_index, 's_C002.tif')
+        fs_img = Image.open(fs_path)
+        lipids_img = Image.open(lipids_path)
+        protein_img = Image.open(protein_path)
+        # fs_img = fs_img / 4096
+        # lipids_img = lipids_img / 4096
+        # protein_img = protein_img / 4096
+        # img = Image.open(img_path)
+        # label = img_path.replace('\\', '/').split('/')[-3]
+        # label = eval(label)
+        if self.transform:
+            fs_img = self.transform(fs_img)
+            lipids_img = self.transform(lipids_img)
+            protein_img = self.transform(protein_img)
+
+        return fs_img, lipids_img, protein_img
+
+
+class UnetTestGastric(Dataset):
+    def __init__(self, fs_dir, transform):
+        self.fs_dir = fs_dir
+        self.transform = transform
+        self.fs_img_dir = os.listdir(self.fs_dir)
+        self.fs_img_dir.sort()
+        # self.fs_img_dir_sort = self.fs_img_dir
+        # self.fs_img_dir_sort.sort()
+    def __len__(self):
+        return len(self.fs_img_dir)
+
+    def __getitem__(self, index):
+        fs_index = self.fs_img_dir[index]
+        fs_path = os.path.join(self.fs_dir, fs_index, 's_C002.tif')
+        fs_img = Image.open(fs_path)
+        # fs_img = fs_img / 4096
+        # lipids_img = lipids_img / 4096
+        # protein_img = protein_img / 4096
+        # img = Image.open(img_path)
+        # label = img_path.replace('\\', '/').split('/')[-3]
+        # label = eval(label)
+        if self.transform:
+            fs_img = self.transform(fs_img)
+        return fs_img, fs_index.split(' ')[0] + fs_index.split(' ')[3]
+
+
+class UnetDataset(Dataset):
+    def __init__(self, fs_dir, lipids_dir, protein_dir, transform):
+        self.fs_dir = fs_dir
+        self.lipids_dir = lipids_dir
+        self.protein_dir = protein_dir
+        self.transform = transform
+        # self.fs_img_dir = strsort(os.listdir(self.fs_dir))
+        # self.lipids_img_dir = strsort(os.listdir(self.lipids_dir))
+        # self.protein_img_dir = strsort(os.listdir(self.protein_dir))
+        self.fs_img_dir = os.listdir(self.fs_dir)
+        # a = strsort(self.fs_img_dir)
+        self.lipids_img_dir = os.listdir(self.lipids_dir)
+        self.protein_img_dir = os.listdir(self.protein_dir)
+        self.fs_img_dir.sort()
+        self.lipids_img_dir.sort()
+        self.protein_img_dir.sort()
+        # self.fs_img_dir_sort = self.fs_img_dir
+        # self.fs_img_dir_sort.sort()
+        # self.lipids_img_dir_sort = self.lipids_img_dir
+        # self.lipids_img_dir_sort.sort()
+        # self.protein_img_dir_sort = self.protein_img_dir
+        # self.protein_img_dir_sort.sort()
+
+    def __len__(self):
+        return len(self.fs_img_dir)
+
+    def __getitem__(self, index):
+        fs_index = self.fs_img_dir[index]
+        lipids_index = self.lipids_img_dir[index]
+        protein_index = self.protein_img_dir[index]
+        fs_path = os.path.join(self.fs_dir, fs_index, 's_C001.tif')
+        lipids_path = os.path.join(self.lipids_dir, lipids_index, 's_C001.tif')
+        protein_path = os.path.join(self.protein_dir, protein_index, 's_C001.tif')
+        fs_img = Image.open(fs_path)
+        lipids_img = Image.open(lipids_path)
+        protein_img = Image.open(protein_path)
+        # fs_img = fs_img / 4096
+        # lipids_img = lipids_img / 4096
+        # protein_img = protein_img / 4096
+        # img = Image.open(img_path)
+        # label = img_path.replace('\\', '/').split('/')[-3]
+        # label = eval(label)
+        if self.transform:
+            fs_img = self.transform(fs_img)
+            lipids_img = self.transform(lipids_img)
+            protein_img = self.transform(protein_img)
+
+        return fs_img, lipids_img, protein_img
+
+
+class UnetTestset(Dataset):
+    def __init__(self, fs_dir, transform):
+        self.fs_dir = fs_dir
+        self.transform = transform
+        self.fs_img_dir = os.listdir(self.fs_dir)
+        self.fs_img_dir.sort()
+        # self.fs_img_dir_sort = self.fs_img_dir
+        # self.fs_img_dir_sort.sort()
+    def __len__(self):
+        return len(self.fs_img_dir)
+
+    def __getitem__(self, index):
+        fs_index = self.fs_img_dir[index]
+        fs_path = os.path.join(self.fs_dir, fs_index, 's_C001.tif')
+        fs_img = Image.open(fs_path)
+        # fs_img = fs_img / 4096
+        # lipids_img = lipids_img / 4096
+        # protein_img = protein_img / 4096
+        # img = Image.open(img_path)
+        # label = img_path.replace('\\', '/').split('/')[-3]
+        # label = eval(label)
+        if self.transform:
+            fs_img = self.transform(fs_img)
+
+        return fs_img, fs_index.split('.')[0]
 
 # 自定义图像数据集
 class MyDataset(Dataset):
