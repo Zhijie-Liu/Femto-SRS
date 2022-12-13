@@ -1,5 +1,5 @@
 # Femto-SRS
-Machine learning project for gastric cancer diagnosis in our paper titled "Instant diagnosis of gastroscopic biopsy via deep-learned single-shot femtosecond stimulated Raman histology" published in Nature Communications.
+Machine learning project for gastric cancer diagnosis in our paper titled "Instant diagnosis of gastroscopic biopsy via deep-learned single-shot femtosecond stimulated Raman histology" published in Nature Communications(https://www.nature.com/articles/s41467-022-31339-8).
 
 For U-Net: 
 
